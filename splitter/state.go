@@ -324,7 +324,15 @@ func (s *state) splitRev(rev *git.Commit) (*git.Oid, error) {
 	var parents []*git.Oid
 	var n uint
 	for n = 0; n < rev.ParentCount(); n++ {
-		parents = append(parents, rev.ParentId(n))
+		pid := rev.ParentId(n)
+		parents = append(parents, pid)
+		inorder := s.cache.get(pid)
+		if inorder == nil {
+				if s.config.Debug {
+					s.logger.Printf("  incorrect order: %s", pid.String())
+				}
+				s.recoverHistory(pid)
+		}
 	}
 
 	if s.config.Debug {
