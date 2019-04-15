@@ -331,6 +331,12 @@ func (s *state) splitRev(rev *git.Commit) (*git.Oid, error) {
 		debugMsg := "  parents:"
 		for _, parent := range parents {
 			debugMsg += fmt.Sprintf(" %s", parent.String())
+			hit := s.cache.get(parent)
+			if hit != nil {
+				debugMsg += fmt.Sprintf(" [%s]", hit.String())
+			} else {
+				debugMsg += fmt.Sprintf(" [MISS]")
+			}
 		}
 		s.logger.Print(debugMsg)
 	}
@@ -352,6 +358,9 @@ func (s *state) splitRev(rev *git.Commit) (*git.Oid, error) {
 
 	if nil == tree {
 		// should never happen
+		if s.config.Debug {
+			s.logger.Printf("  ** No tree! **\n")
+		}
 		return nil, nil
 	}
 	defer tree.Free()
