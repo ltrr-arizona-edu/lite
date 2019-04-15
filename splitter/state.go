@@ -119,11 +119,11 @@ func (s *state) findExistingSplits() (*git.Oid, error) {
 		}
 		return nil, nil
 	}
-	subtreeSignature := regexp.MustCompile("git-subtree-dir: " + s.simplePrefix)
-	splitPattern := regexp.MustCompile("git-subtree-split: ([[:xdigit:]]+)\\s")
+	subtreeSignature := regexp.MustCompile(`git-subtree-dir: ` + s.simplePrefix)
+	splitPattern := regexp.MustCompile(`git-subtree-split: ([[:xdigit:]]+)\s`)
 	preWalk, err := s.walker()
 	if err != nil {
-		return nil, fmt.Errorf("Could not pre-walk the repository: %s", err)
+		return nil, fmt.Errorf("could not pre-walk the repository: %s", err)
 	}
 	defer preWalk.Free()
 
@@ -189,7 +189,7 @@ func (s *state) split() error {
 
 	revWalk, err := s.walker()
 	if err != nil {
-		return fmt.Errorf("Impossible to walk the repository: %s", err)
+		return fmt.Errorf("impossible to walk the repository: %s", err)
 	}
 	defer revWalk.Free()
 
@@ -233,12 +233,12 @@ func (s *state) split() error {
 func (s *state) walker() (*git.RevWalk, error) {
 	revWalk, err := s.repo.Walk()
 	if err != nil {
-		return nil, fmt.Errorf("Impossible to walk the repository: %s", err)
+		return nil, fmt.Errorf("impossible to walk the repository: %s", err)
 	}
 
 	err = s.pushRevs(revWalk)
 	if err != nil {
-		return nil, fmt.Errorf("Impossible to determine split range: %s", err)
+		return nil, fmt.Errorf("impossible to determine split range: %s", err)
 	}
 
 	if s.config.Debug {
@@ -253,7 +253,7 @@ func (s *state) walker() (*git.RevWalk, error) {
 func (s *state) recoverHistory(oldMergedSplit *git.Oid) error {
 	revStroll, err := s.oldSplitStroller(oldMergedSplit)
 	if err != nil {
-		return fmt.Errorf("Impossible to walk the old merged split: %s", err)
+		return fmt.Errorf("impossible to walk the old merged split: %s", err)
 	}
 	defer revStroll.Free()
 
@@ -297,12 +297,12 @@ func (s *state) recoverHistory(oldMergedSplit *git.Oid) error {
 func (s *state) oldSplitStroller(oldMergedSplit *git.Oid) (*git.RevWalk, error) {
 	revStroll, err := s.repo.Walk()
 	if err != nil {
-		return nil, fmt.Errorf("Cannot even start processing the old merged split: %s", err)
+		return nil, fmt.Errorf("cannot even start processing the old merged split: %s", err)
 	}
 
 	err = revStroll.Push(oldMergedSplit)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to traverse the old merged split: %s", err)
+		return nil, fmt.Errorf("failed to traverse the old merged split: %s", err)
 	}
 
 	revStroll.Sorting(git.SortTopological | git.SortReverse)
@@ -519,7 +519,7 @@ func (s *state) mergeTrees(t1, t2 *git.Tree) (*git.Tree, error) {
 	defer index.Free()
 
 	if index.HasConflicts() {
-		return nil, fmt.Errorf("Cannot split as there is a merge conflict between two paths")
+		return nil, fmt.Errorf("cannot split as there is a merge conflict between two paths")
 	}
 
 	oid, err := index.WriteTreeTo(s.repo)
@@ -572,7 +572,7 @@ func (s *state) copyOrSkip(rev *git.Commit, tree *git.Tree, newParents []*git.Oi
 			continue
 		}
 
-		if 0 == ptree.Cmp(tree.Id()) {
+		if ptree.Cmp(tree.Id()) == 0 {
 			// an identical parent could be used in place of this rev.
 			identical = parent
 		} else {
@@ -583,7 +583,7 @@ func (s *state) copyOrSkip(rev *git.Commit, tree *git.Tree, newParents []*git.Oi
 		// eliminate duplicates
 		isNew := true
 		for _, gp := range gotParents {
-			if 0 == gp.Cmp(parent) {
+			if gp.Cmp(parent) == 0 {
 				isNew = false
 				break
 			}
@@ -604,7 +604,7 @@ func (s *state) copyOrSkip(rev *git.Commit, tree *git.Tree, newParents []*git.Oi
 	if s.config.Git > 2 && nil != identical && nil != nonIdentical {
 		revWalk, err := s.repo.Walk()
 		if err != nil {
-			return nil, false, fmt.Errorf("Impossible to walk the repository: %s", err)
+			return nil, false, fmt.Errorf("impossible to walk the repository: %s", err)
 		}
 
 		s.repoMu.Lock()
@@ -612,7 +612,7 @@ func (s *state) copyOrSkip(rev *git.Commit, tree *git.Tree, newParents []*git.Oi
 
 		err = revWalk.PushRange(fmt.Sprintf("%s..%s", identical, nonIdentical))
 		if err != nil {
-			return nil, false, fmt.Errorf("Impossible to determine split range: %s", err)
+			return nil, false, fmt.Errorf("impossible to determine split range: %s", err)
 		}
 
 		err = revWalk.Iterate(func(rev *git.Commit) bool {
@@ -688,7 +688,7 @@ func (s *state) updateTarget() error {
 	}
 
 	if nil == s.result.Head() {
-		return fmt.Errorf("Unable to create branch %s as it is empty (no commits were split)", s.config.Target)
+		return fmt.Errorf("unable to create branch %s as it is empty (no commits were split)", s.config.Target)
 	}
 
 	obj, ref, err := s.repo.RevparseExt(s.config.Target)
