@@ -182,10 +182,6 @@ func (s *state) findExistingSplits() (*git.Oid, error) {
 }
 
 func (s *state) revIsDescendantOfBranch(newrev *git.Oid, branch string) error {
-	branchId, err := s.repo.RevparseSingle(branch)
-	if err != nil {
-		return fmt.Errorf("could not find the banch to see if the revision is a descendent: %s", err)
-	}
 	ancestryWalk, err := s.repo.Walk()
 	if err != nil {
 		return fmt.Errorf("could not track ancestry in the repository: %s", err)
@@ -195,7 +191,7 @@ func (s *state) revIsDescendantOfBranch(newrev *git.Oid, branch string) error {
 	if s.config.Debug {
 		s.logger.Printf("Checking revision branch ancestry.\n")
 	}
-	err = ancestryWalk.PushRange(fmt.Sprintf("%s..%s", newrev, branchId))
+	err = ancestryWalk.PushRange(fmt.Sprintf("%s..%s", newrev, branch))
 	if err != nil {
 		return fmt.Errorf("could not set the starting revision for tracking ancestry: %s", err)
 	}
