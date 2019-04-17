@@ -749,6 +749,10 @@ func (s *state) updateTarget() error {
 		ref.Free()
 	} else {
 		defer ref.Free()
+		err = s.revIsDescendantOfBranch(s.result.Head(), s.config.Target)
+		if err != nil {
+			return err
+		}
 		ref.SetTarget(s.result.Head(), "subtree split")
 	}
 
