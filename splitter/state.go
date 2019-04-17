@@ -181,6 +181,39 @@ func (s *state) findExistingSplits() (*git.Oid, error) {
 	return nil, err
 }
 
+func (s *state) revIsDescendantOfBranch(newrev *git.Oid, branch string) error {
+	branchId, err := s.repo.RevparseSingle(branch)
+	if err != nil {
+		return fmt.Errorf("could not find the banch to see if the revision is a descendent: %s", err)
+	}
+	ancestryWalk, err := s.repo.Walk()
+	if err != nil {
+		return fmt.Errorf("could not track ancestry in the repository: %s", err)
+	}
+	defer ancestryWalk.Free()
+	ancestryWalk.Sorting(git.SortTopological | git.SortReverse)
+	if s.config.Debug {
+		s.logger.Printf("Checking revision branch ancestry.\n")
+	}
+	err = ancestryWalk.PushRange(fmt.Sprintf("%s..%s", newrev, branchId))
+	if err != nil {
+		return fmt.Errorf("could not set the starting revision for tracking ancestry: %s", err)
+	}
+	missing := true
+	err = ancestryWalk.Iterate(func(commit *git.Commit) bool {
+		defer commit.Free()
+		if s.config.Debug {
+			s.logger.Printf("Found revision: %s\n", commit.Id().String())
+		}
+		missing = false
+		return false;
+	})
+	if missing {
+		return fmt.Errorf("no common ancestry for %s and %s", newrev, branch)
+	}
+	return nil
+}
+
 func (s *state) split() error {
 	startTime := time.Now()
 	defer func() {
@@ -759,7 +792,11 @@ func (s *state) pushRevs(revWalk *git.RevWalk) error {
 			s.logger.Printf("Found cached head: %v\n", start)
 		}
 		s.result.moveHead(s.cache.get(start))
-		// FIXME: CHECK that this is an ancestor of the branch?
+		// CHECK that this is an ancestor of the branch?
+		err := s.revIsDescendantOfBranch(start, s.originBranch)
+		if err != nil {
+			return err
+		}
 		return revWalk.PushRange(fmt.Sprintf("%s..%s", start, s.originBranch))
 	}
 
